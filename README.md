@@ -14,3 +14,11 @@
 ## 01 Product, Category
 
 * Add the *Product* and *Category* classes.
+
+
+&nbsp;
+## 02 Adding a Database Context
+
+* Add the *DAL* folder and the *StoreContext* class.
+
+* Add a connectionString.
