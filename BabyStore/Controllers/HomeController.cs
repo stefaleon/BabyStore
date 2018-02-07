@@ -13,9 +13,9 @@ namespace BabyStore.Controllers
             return View();
         }
 
-        public ActionResult About()
+        public ActionResult About(string id)
         {
-            ViewBag.Message = "Your application description page.";
+            ViewBag.Message = "Your application description page. Got s: " + id;
 
             return View();
         }
