@@ -332,3 +332,39 @@ the database and several comments and debates about the different reasons about 
 however, one of the key reasons for not doing it is that a search engine spider will crawl public hyperlinks
 in your web site and potentially be able to delete all the records if there is an unauthenticated link to delete
 records. Later we will add security to editing categories so that this becomes a moot point.
+
+
+
+### Adding a Product Controller and Views
+
+The application needs to provide a way to associate a product with a category and it does this by rendering an
+HTML select element so that the users can pick a category from a list when creating or editing a product.
+
+In the controller, the new code responsible for this is found in both versions of the Edit methods, as
+well as in the POST version of the Create method:
+
+```
+ViewBag.CategoryID = new SelectList(db.Categories, "ID", "Name", product.CategoryID);
+```
+
+In the GET version of the Create method, the following similar code is used:
+
+```
+ViewBag.CategoryID = new SelectList(db.Categories, "ID", "Name");
+```
+
+This code assigns an item to a ViewBag property named CategoryID . The item is a SelectList object
+consisting of all the categories in the database, with each entry in the list using the Name property as the text
+and the ID field as the value. The optional fourth parameter determines the preselected item in the select
+list. As an example, if the fourth argument product.CategoryID is set to 2 , then the Toys category will be
+preselected in the drop-down list when it appears in the view. Figure 2-9 shows how this appears in a view.
+
+The views display an HTML select element by using the following HTML Helper:
+
+```
+@Html.DropDownList("CategoryID", null, htmlAttributes: new { @class = "form-control" })
+```
+
+This code generates an HTML element based on the ViewBag.CategoryID property and assigns the CSS
+class form control to it. If the string specified in the first argument matches a ViewBag property name, it is
+automatically used rather than having to specify a reference to the ViewBag in the DropDownList helper method.

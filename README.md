@@ -28,3 +28,8 @@
 ## 03 Adding Controllers and Views
 
 * Add the *Categories* MVC 5 Controller with views.
+
+&nbsp;
+## 04 Adding Controllers and Views
+
+* Add the *Products* MVC 5 Controller with views.
