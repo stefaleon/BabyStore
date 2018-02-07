@@ -22,3 +22,9 @@
 * Add the *DAL* folder and the *StoreContext* class.
 
 * Add a connectionString.
+
+
+&nbsp;
+## 03 Adding Controllers and Views
+
+* Add the *Categories* MVC 5 Controller with views.

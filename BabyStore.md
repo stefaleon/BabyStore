@@ -144,3 +144,191 @@ It’s also worth noting that you don’t need to define a connection string in 
 so, then Entity Framework will use a default one based on the context class.
 
 ■ Note Make sure you update the Web.config file in the root of the project and not the one in the Views folder.
+
+
+
+### Adding a Category Controller and Views
+
+The code
+
+```
+private StoreContext db = new StoreContext();
+```
+instantiates a new context object for use
+by the controller. This is then used throughout the lifetime of the controller and disposed of by the Dispose
+method at the end of the controller code.
+
+
+
+The Index method is used to return a list of all the categories to the Views\Categories\Index.cshtml view:
+
+```
+// GET: Categories
+public ActionResult Index()
+{
+  return View(db.Categories.ToList());
+}
+```
+
+The Details method finds a single category from the database based on the id parameter. As you saw in
+Chapter 1 , the id parameter is passed in via the URL using the routing system.
+
+```
+// GET: Categories/Details/5
+public ActionResult Details(int? id)
+{
+  if (id == null)
+  {
+    return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+  }
+  Category category = db.Categories.Find(id);
+  if (category == null)
+  {
+    return HttpNotFound();
+  }
+  return View(category);
+}
+```
+
+The GET version of the Create method simply returns the Create view. This may seem a little strange at
+first but what it means is that this returns a view showing a blank HTML form for creating a new category.
+
+```
+// GET: Categories/Create
+public ActionResult Create()
+{
+  return View();
+}
+```
+
+There is another version of the Create method that’s used for HTTP POST requests. This method is
+called when the user submits the form rendered by the Create view. It takes a category as a parameter and
+adds it to the database. If it’s successful it returns the web site to the Index view; otherwise, it reloads the
+Create view.
+
+```
+// POST: Categories/Create
+// To protect from overposting attacks, please enable the specific properties you want to bind to, for
+// more details see http://go.microsoft.com/fwlink/?LinkId=317598.
+[HttpPost]
+[ValidateAntiForgeryToken]
+public ActionResult Create([Bind(Include = "ID,Name")] Category category)
+{
+  if (ModelState.IsValid)
+  {
+    db.Categories.Add(category);
+    db.SaveChanges();
+    return RedirectToAction("Index");
+  }
+  return View(category);
+}
+```
+Because this method is an HTTP POST , it contains some extra code:
+
+*  The [HttpPost] attribute tells the controller that when it receives a POST request for
+the Create action, it should use this method rather than the other create method.
+* [ValidateAntiForgeryToken] ensures that the token passed by the HTML form,
+thus validating the request. The purpose of this is to ensure that the request actually
+came from the form it is expected to come from in order to prevent cross-site request
+forgeries. In simple terms, a cross-site request forgery is a request from a form on
+another web site to your web site with malicious intentions.
+* The parameters ([Bind(Include = "ID,Name")] Category category) tell the
+method to include only the ID and the Name properties when adding a new category.
+The Bind attribute is used to protect against overposting attacks by creating a list
+of safe properties to update; however, as we will discuss later, it does not work as
+expected and so it is safer to use a different method for editing or creating where
+some values may be blank. As an example of overposting, consider a scenario where
+the price is submitted as part of the request when a user submits an order for a
+product. An overposting attack would attempt to alter this price data by changing the
+submitted request data in an attempt to buy the product cheaper.
+
+
+
+The GET version of the Edit method contains code identical to the Details method. The method finds a
+category by ID and then returns this to the view. The view is then responsible for displaying the category in a
+format that allows it to be edited.
+
+```
+// GET: Categories/Edit/5
+public ActionResult Edit(int? id)
+{
+  if (id == null)
+  {
+    return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+  }
+  Category category = db.Categories.Find(id);
+  if (category == null)
+  {
+    return HttpNotFound();
+  }
+  return View(category);
+}
+```
+The POST version of the Edit method is very similar to the POST version of the Create method. It
+contains an extra line of code to check that the entity has been modified before attempting to save it to the
+database and, if it’s successful, the Index view is returned or else the Edit view is redisplayed:
+
+```
+// POST: Categories/Edit/5
+// To protect from overposting attacks, please enable the specific properties you want to bind to, for
+// more details see http://go.microsoft.com/fwlink/?LinkId=317598.
+[HttpPost]
+[ValidateAntiForgeryToken]
+public ActionResult Edit([Bind(Include = "ID,Name")] Category category)
+{
+  if (ModelState.IsValid)
+  {
+    db.Entry(category).State = EntityState.Modified;
+    db.SaveChanges();
+    return RedirectToAction("Index");
+  }
+  return View(category);
+}
+```
+
+There are also two versions of the Delete method. ASP.NET MVC scaffolding takes the approach of
+displaying the entity details to the users and asking them to confirm the deletion before using a form to
+actually submit the deletion request. The GET version of the Delete method is shown here. You will notice
+this is very similar to the Details method in that it finds a category by ID and returns it to the view:
+
+```
+// GET: Categories/Delete/5
+public ActionResult Delete(int? id)
+{
+  if (id == null)
+  {
+    return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+  }
+  Category category = db.Categories.Find(id);
+  if (category == null)
+  {
+    return HttpNotFound();
+  }
+  return View(category);
+}
+```
+
+The POST version of the Delete method performs an anti-forgery check. It then finds the category by ID,
+removes it, and saves the database changes. See Chapter 4 for how to correct this issue.
+
+```
+// POST: Categories/Delete/5
+[HttpPost, ActionName("Delete")]
+[ValidateAntiForgeryToken]
+public ActionResult DeleteConfirmed(int id)
+{
+  Category category = db.Categories.Find(id);
+  db.Categories.Remove(category);
+  db.SaveChanges();
+  return RedirectToAction("Index");
+}
+```
+
+This auto-generated Delete method does not work correctly due to the fact that the product entity
+contains a foreign key referencing the category entity.
+
+■ Note There are several reasons why ASP.NET takes this approach to disallow a GET request to update
+the database and several comments and debates about the different reasons about the security of doing so;
+however, one of the key reasons for not doing it is that a search engine spider will crawl public hyperlinks
+in your web site and potentially be able to delete all the records if there is an unauthenticated link to delete
+records. Later we will add security to editing categories so that this becomes a moot point.
