@@ -58,3 +58,11 @@ the *ProductsController* Index method rather than a list of text items.
 * Modify the Index method of the Controllers\ProductsController.cs.
 
 * Add a Search Box to the Main Site Navigation Bar.
+
+
+&nbsp;
+## 08 Filter the Search Results by Category Using ViewBag
+
+* Update the *ProductsController* *Index* method to filter by *Category*.
+
+* Add the filter to the products *Index* page.
