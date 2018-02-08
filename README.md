@@ -39,3 +39,14 @@
 ## 05 Splitting DataAnnotations into Another File Using MetaDataType
 
 *  Make the *Product* and *Category* classes partial, create the *ProductMetaData* and *CategoryMetaData* classes and add annotations.
+
+
+&nbsp;
+## 06 Filtering Products by Category
+
+* Update the Index method in the *ProductsController* so that it receives a parameter
+representing a chosen category and returns a list of products that belong to that
+category.
+
+* Transform the list shown in the *Category Index Page* to a list of hyperlinks that target
+the *ProductsController* Index method rather than a list of text items.

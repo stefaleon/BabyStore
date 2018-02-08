@@ -16,9 +16,15 @@ namespace BabyStore.Controllers
         private StoreContext db = new StoreContext();
 
         // GET: Products
-        public ActionResult Index()
+        public ActionResult Index(string category)
         {
             var products = db.Products.Include(p => p.Category);
+
+            if (!String.IsNullOrEmpty(category))
+            {
+                products = products.Where(p => p.Category.Name == category);
+            }
+
             return View(products.ToList());
         }
 

@@ -424,3 +424,115 @@ The results of this code are exactly the same as in Figure 2-17 ; however, usin
 class was not altered except to declare it as partial. This can be a useful strategy when working with
 classes that have been automatically created that you do not want to alter, for example, when using Entity
 Framework Database First.
+
+
+
+### A Simple Query: Sorting Categories Alphabetically
+
+Categories in the Categories Index page are currently sorted by the ID property so we’ll change this to sort
+them alphabetically by the Name property.
+This is a simple change to make. Open the Controllers\CategoriesController.cs file and update the
+Index method as follows:
+
+```
+// GET: Categories public ActionResult Index()
+{
+  return View(db.Categories .OrderBy(c => c.Name) .ToList());
+}
+```
+
+
+
+### Filtering Products by Category: Searching Related Entities Using Navigational Properties and Include
+
+You’ve seen how to create a very basic web site showing two lists of different entities. Now we are going to
+add some useful functionality and get these lists to interact. We’ll do this using a chosen value from the list of
+categories to filter the list of products. To do this, we’ll need to make the following changes to the code:
+
+* Update the Index method in the ProductsController so that it receives a parameter
+representing a chosen category and returns a list of products that belong to that
+category.
+* Transform the list shown in the Category Index Page to a list of hyperlinks that target
+the ProductsController Index method rather than a list of text items.
+
+First change the ProductsController Index method as follows:
+
+```
+public ActionResult Index( string category )
+{
+  var products = db.Products.Include(p => p.Category);
+  if (!String.IsNullOrEmpty(category))
+  {
+    products = products.Where(p => p.Category.Name == category);
+  }
+  return View(products.ToList());
+}
+```
+
+This code adds a new string parameter named category to the method. An if statement has been
+added to check if the new category string is empty. If the category string is not empty, the products are
+filtered by using the navigational property Category in the Product class using this code:
+
+```
+products = products.Where(p => p.Category.Name == category);
+```
+
+The use of the Include method in the following code line is an example what is known as **eager loading**:
+
+```
+ var products = db.Products.Include(p => p.Category);
+```
+
+It tells Entity Framework to perform a single query and retrieve all the products and also all the related
+categories. Eager loading typically results in an SQL join query that retrieves all the required data at once.
+
+You could omit the Include method and Entity Framework would use lazy loading, which would involve
+multiple queries rather than a single join query.
+
+There are performance implications to choosing which method of loading to use. Eager loading results in
+one round trip to the database, but on occasion may result in complex join statements that are slow to process.
+However, lazy loading results in several round trips to the database. Here eager loading is used since the join
+statement will be relatively simple and we want to load the related categories in order to search over them.
+The products variable is filtered using the Where operator to match products when the Name property of
+the product’s Category property matches the category parameter passed into the method. This may seem
+a little like overkill and you may be wondering why I didn’t just use the CategoryID property and pass in
+a number rather than a string. The answer to this lies in the fact that using a category name is much more
+meaningful in a URL when using routing.
+
+This is an excellent example of why navigational properties are so useful and powerful. By using a
+navigational property in my Product class, I am able to search two related entities using minimal code. If I wanted
+to match products by category name, but did not use navigational properties, I would have to enter the realm of
+loading category entities via the ProductsController which by convention is only meant to manage products.
+
+
+
+■ Caution A common error often made by programmers new to using Entity Framework is using ToList()
+in the wrong place. During a method, LINQ is often used for building queries and that is precisely what is does;
+it simply builds up a query, it does not execute the query! The query is only executed when ToList() is called.
+Novice programmers often use ToList() at the beginning of their method. The consequences of this are that
+more records (usually all) will be retrieved from the database than are required, often with an adverse effect on
+performance. All these records are then held in memory and processed as an in-memory list, which is usually
+undesirable and can slow the web site down dramatically. Alternatively, do not even call ToList() and the
+query will only be executed when the view loads. This topic is known as deferred execution due to the fact that
+the execution of the query is deferred until after ToList() is called.
+
+
+To finish the functionality for filtering products by category, we need to change the list of categories in
+the Categories Index page into a list of hyperlinks that target the ProductsController Index method.
+In order to change the categories to hyperlinks, modify the Views\Categories\Index.cshtml file by
+updating the line of code
+
+```
+@Html.DisplayFor(modelItem => item.Name)
+```
+to:
+
+```
+@Html.ActionLink(item.Name, "Index", "Products", new { category = item.Name }, null)
+```
+
+This code uses the HTML ActionLink helper to generate a hyperlink with the link text being the
+category’s name targeting the Index method of the ProductsController . The fourth parameter is
+routeValue and if category is set as an expected route value, its value will be set to the category name;
+otherwise, the string category=categoryname will be appended to the URL’s query string in the same
+manner as we entered manually to demonstrate the product filtering was working.
