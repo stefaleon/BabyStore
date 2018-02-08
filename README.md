@@ -50,3 +50,6 @@ category.
 
 * Transform the list shown in the *Category Index Page* to a list of hyperlinks that target
 the *ProductsController* Index method rather than a list of text items.
+
+
+Ch02end
