@@ -536,3 +536,67 @@ category’s name targeting the Index method of the ProductsController . The fou
 routeValue and if category is set as an expected route value, its value will be set to the category name;
 otherwise, the string category=categoryname will be appended to the URL’s query string in the same
 manner as we entered manually to demonstrate the product filtering was working.
+
+
+
+## 3
+
+
+### Updating the Controller for Product Searching
+
+To add product search, modify the Index method of the Controllers\ProductsController.cs file as
+shown here:
+
+```
+public ActionResult Index(string category , string search )
+{
+  var products = db.Products.Include(p => p.Category);
+  if (!String.IsNullOrEmpty(category))
+  {
+    products = products.Where(p => p.Category.Name == category);
+  }
+
+  if (!String.IsNullOrEmpty(search))
+  {
+    products = products.Where(p => p.Name.Contains(search) ||
+    p.Description.Contains(search) ||
+    p.Category.Name.Contains(search));
+  }
+  return View(products.ToList());
+}
+```
+
+First, a search parameter is added to the method and then if search is not null or empty, the products
+query is modified to filter on the value of search using this code:
+
+```
+if (!String.IsNullOrEmpty(search))
+{
+products = products.Where(p => p.Name.Contains(search) ||
+p.Description.Contains(search) ||
+p.Category.Name.Contains(search));
+}
+```
+
+Translated into plain English, this code says “find the products where either the product name field
+contains search, the product description contains search, or the product's category name contains search”.
+The code again makes use of a lambda expression but this expression is more complex and uses the logical
+OR operator || . Note that there is still only one operator required on the left of the => lambda operator
+despite there being multiple alternatives in the code statement to the right of => . When the query is run
+against the database, the Contains method is translated to SQL LIKE and is case-insensitive.
+
+
+
+### Adding a Search Box to the Main Site Navigation Bar
+
+```
+@using (Html.BeginForm("Index", "Products", FormMethod.Get, new { @class =
+"navbar-form navbar-left" }))
+{
+  <div class="form-group">
+  @Html.TextBox("Search", null, new { @class = "form-control", @placeholder
+  = "Search Products" })
+  </div>
+  <button type="submit" class="btn btn-default">Submit</button>
+}
+```

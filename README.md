@@ -50,3 +50,11 @@ category.
 
 * Transform the list shown in the *Category Index Page* to a list of hyperlinks that target
 the *ProductsController* Index method rather than a list of text items.
+
+
+&nbsp;
+## 07 Product search
+
+* Modify the Index method of the Controllers\ProductsController.cs.
+
+* Add a Search Box to the Main Site Navigation Bar.
