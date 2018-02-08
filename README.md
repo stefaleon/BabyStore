@@ -33,3 +33,9 @@
 ## 04 Adding Controllers and Views
 
 * Add the *Products* MVC 5 Controller with views.
+
+
+&nbsp;
+## 05 Splitting DataAnnotations into Another File Using MetaDataType
+
+*  Make the *Product* and *Category* classes partial, create the *ProductMetaData* and *CategoryMetaData* classes and add annotations.

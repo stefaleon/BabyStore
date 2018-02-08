@@ -2,11 +2,9 @@
 
 namespace BabyStore.Models
 {
-    public class Product
+    public partial class Product
     {
-        public int ID { get; set; }
-
-        [Display(Name = "Product Name")]
+        public int ID { get; set; }                
         public string Name { get; set; }
 
         public string Description { get; set; }

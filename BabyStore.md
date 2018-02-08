@@ -368,3 +368,59 @@ The views display an HTML select element by using the following HTML Helper:
 This code generates an HTML element based on the ViewBag.CategoryID property and assigns the CSS
 class form control to it. If the string specified in the first argument matches a ViewBag property name, it is
 automatically used rather than having to specify a reference to the ViewBag in the DropDownList helper method.
+
+
+
+
+
+### Splitting DataAnnotations into Another File Using MetaDataType
+
+Some developers prefer the model classes as clean as possible, therefore preferring not to add
+DataAnnotations to them. This is achieved by using a MetaDataType class as follows.
+
+Add a new class to the Models folder called ProductMetaData.cs and update the contents of the file to
+the following code:
+
+```
+using System.ComponentModel.DataAnnotations;
+namespace BabyStore.Models
+{
+  [MetadataType(typeof(ProductMetaData))]
+  public partial class Product
+  {
+  }
+
+  public class ProductMetaData
+  {
+    [Display(Name = "Product Name")]
+    public string Name;
+  }
+}
+```
+
+This declares the Product class as now being a partial class, meaning it is split across multiple files. The
+DataAnnotation [MetadataType(typeof(ProductMetaData))] is used to tell .NET to apply metadata to the
+Product class from the ProductMetaData class.
+
+Modify the Product class back to its original state but declare it as a partial class so that it can be used in
+conjunction with the other class declaration in the ProductMetaData.cs file.
+
+```
+namespace BabyStore.Models
+{
+  public partial class Product
+  {
+    public int ID { get; set; }
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public decimal Price { get; set; }
+    public int? CategoryID { get; set; }
+    public virtual Category Category { get; set; }
+  }
+}
+```
+
+The results of this code are exactly the same as in Figure 2-17 ; however, using this code, the Product
+class was not altered except to declare it as partial. This can be a useful strategy when working with
+classes that have been automatically created that you do not want to alter, for example, when using Entity
+Framework Database First.
