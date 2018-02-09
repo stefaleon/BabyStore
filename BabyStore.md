@@ -1023,3 +1023,115 @@ foreign key of all the affected products to null . Update the HttpPost version o
 This code adds a simple foreach loop using the products navigational property of the category entity
 to set the CategoryID of each product to null . When you now try to delete Test Category , it will be deleted
 without an error and the CategoryID column of Test Product will be set to null in the database.
+
+
+
+### Enabling Code First Migrations and Seeding the Database with Data
+
+At present we have been entering data manually into the web site to create products and categories. This is
+fine for testing a new piece of functionality in a development environment, but what if you want to reliably
+and easily recreate the same data in other environments? This is where the feature of Entity Framework,
+known as seeding, comes into play. Seeding is used to programmatically create entries in the database and
+control the circumstances under which they are entered.
+
+I am going to show you how to seed the database using a feature known as Code First Migrations .
+Migrations are a way of updating the database schema based on code changes made to model classes.
+We will use migrations throughout the book from now on to update the database schema.
+The first thing we’re going to update is the database connection string in the web.config file so
+that a new database is used for testing that the seed data works correctly.
+
+Update the StoreContext connectionString property as follows to create a new database named BabyStore2.mdf :
+```
+<add name="StoreContext" connectionString="Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFile
+name=|DataDirectory|\ BabyStore2 .mdf;Initial Catalog= BabyStore2 ;Integrated Security=True"
+providerName="System.Data.SqlClient" />
+```
+Although the connectionString is shown over multiple lines in the book, be sure to keep it on a single
+line in Visual Studio.
+
+
+### Enabling Code First Migrations
+
+Open the Package Manager Console by choosing View ➤ Other Windows in the main menu. This is where
+all the commands to use migrations are entered. The first thing to do when using migrations is to enable
+them for the database context you want to update the database schema for. If there is only one context, then
+the context is optional.
+In this chapter, we are interested in the product and category data, so in Package Manager Console,
+enter the command:
+
+```
+Enable-Migrations -ContextTypeName BabyStore.DAL.StoreContext
+```
+
+
+Next add an initial migration called InitialDatabase by entering the following command in Package
+Manager Console:
+
+```
+add-migration InitialDatabase
+```
+
+This command creates a new file in the Migrations folder with a name in the format
+<TIMESTAMP>_ InitialDatabase.cs , where <TIMESTAMP> represents the time the file was created. The Up
+method creates the database tables and the Down method deletes them. Following is the code generated in
+this new class file. You can see that the Up method contains code to recreate the Categories and Products
+tables along with the data types and keys.
+
+### Seeding the Database with Test Data
+
+When using Code First Migrations, the Seed method adds test data into a database. Generally, the data
+is only added when the database is created or when some new data is added to the method. Data is not
+dropped when the data model changes. When migrating to production, you will need to decide if any data is
+initially required, rather than using test data, and update the seed method appropriately.
+To add some new data for Categories and Products to the database, update the Seed method of the
+Migrations\Configurations.cs file.
+
+```
+...code
+```
+
+This code creates a list of category and product objects and saves them to the database. To explain how
+this works, we will break down the code used for the categories. First a variable named categories is created
+and a list of category objects is created and assigned to it using the following code:
+
+```
+var categories = new List<Category>
+{
+new Category { Name="Clothes" },
+new Category { Name="Play and Toys" },
+new Category { Name="Feeding" },
+new Category { Name="Medicine" },
+new Category { Name="Travel" },
+new Category { Name="Sleeping" }
+};
+```
+
+The next line of code, ```categories.ForEach(c => context.Categories.AddOrUpdate(p => p.Name, c));``` ,
+will add or update a category if there is not one with the same name already in the database. For this
+example, we made the assumption that the category name will be unique.
+
+The final piece of code — ```context.SaveChanges();``` —is called to save the changes to the database.
+
+WE call this twice in the file but this is not required; you only need to call it once. However, calling it after saving
+each entity type allows you to locate the source of the problem if there is an issue writing to the database.
+
+If you do encounter a scenario where you want to add more than one entity with very similar data
+(for example, two categories with the same name), you can add to the context individually as follows:
+
+```
+context.Categories.Add(new Category { Name = "Clothes" });
+context.SaveChanges();
+context.Categories.Add(new Category { Name = "Clothes" });
+context.SaveChanges();
+```
+
+Again there is no need to save the changes multiple times, but doing so will help you to track down the
+source of any error. The code used to add products follows the same pattern as that to add categories, apart
+from the fact that the category entity is used to generate the CategoryID field using the following code to find a
+category's ID value based on its name: ```CategoryID=categories.Single( c => c.Name == "Clothes").ID```.
+
+### Creating the Database Using the Initial Database Migration
+
+Now we are ready to create the new database with test data from the Seed method. In Package Manager
+Console, run the command: ```update-database``` . If this works correctly, you should be informed that the
+migrations have been applied and that the Seed method has run.

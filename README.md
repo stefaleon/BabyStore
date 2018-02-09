@@ -82,3 +82,12 @@ the *ProductsController* Index method rather than a list of text items.
 ## 10 Deleting an Entity Used as a Foreign Key
 
 * Update the *HttpPost* version of the *Delete* method in the file *\Controllers\CategoriesController.cs*.
+
+
+
+&nbsp;
+## 11 Code First Migrations
+
+* Enable migrations for the *StoreContext*.
+
+* Seed the Database with Test Data.
