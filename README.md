@@ -75,3 +75,5 @@ the *ProductsController* Index method rather than a list of text items.
 * Add the *ProductIndexViewModel* and the *CategoryWithCount* class.
 
 * Update the *ProductsController* *Index* method to use the ViewModel.
+
+-chapter3
