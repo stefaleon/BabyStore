@@ -8,6 +8,7 @@ using System.Web;
 using System.Web.Mvc;
 using BabyStore.DAL;
 using BabyStore.Models;
+using BabyStore.ViewModels;
 
 namespace BabyStore.Controllers
 {
@@ -18,28 +19,43 @@ namespace BabyStore.Controllers
         // GET: Products
         public ActionResult Index(string category, string search)
         {
-            var products = db.Products.Include(p => p.Category);                      
+            //instantiate a new view model
+            var viewModel = new ProductIndexViewModel();
 
+            //select the products
+            var products = db.Products.Include(p => p.Category);
+
+            //perform the search and save the search string to the viewModel
             if (!String.IsNullOrEmpty(search))
             {
                 products = products.Where(p => p.Name.Contains(search) ||
                 p.Description.Contains(search) ||
                 p.Category.Name.Contains(search));
-                ViewBag.Search = search;
+                viewModel.Search = search;
             }
 
-            var categories = products.OrderBy(p => p.Category.Name).Select(p =>
-                                                        p.Category.Name).Distinct();
-            
+            //group search results into categories and count how many items in each category
+            viewModel.CatsWithCount = from matchingProducts in products
+                                      where
+                                      matchingProducts.CategoryID != null
+                                      group matchingProducts by
+                                      matchingProducts.Category.Name into
+                                      catGroup
+                                      select new CategoryWithCount()
+                                      {
+                                          CategoryName = catGroup.Key,
+                                          ProductCount = catGroup.Count()
+                                      };
+
 
             if (!String.IsNullOrEmpty(category))
             {
                 products = products.Where(p => p.Category.Name == category);
             }
+            
+            viewModel.Products = products;
 
-            ViewBag.Category = new SelectList(categories);
-
-            return View(products.ToList());
+            return View(viewModel);            
         }
 
         // GET: Products/Details/5

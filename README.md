@@ -66,3 +66,12 @@ the *ProductsController* Index method rather than a list of text items.
 * Update the *ProductsController* *Index* method to filter by *Category*.
 
 * Add the filter to the products *Index* page.
+
+
+
+&nbsp;
+## 09 Use a ViewModel
+
+* Add the *ProductIndexViewModel* and the *CategoryWithCount* class.
+
+* Update the *ProductsController* *Index* method to use the ViewModel.

@@ -709,7 +709,7 @@ that the search term originally entered by the user is preserved when the produc
 
 ### Build your queries in the correct order
 
- When we select a category, the rest dissapear from the dropdown list. In order to rectify
+ When we select a category, the rest disappear from the dropdown list. In order to rectify
 this issue, modify the Index method of the \Controllers\ProductsController.cs file as follows, so that
 products are filtered by category **after the categories variable has been populated**:
 
@@ -739,3 +739,243 @@ public ActionResult Index(string category, string search)
   return View(products.ToList());
 }
 ```
+
+
+### Using a View Model for More Complex Filtering
+
+Using the ViewBag to pass data to views works, but once you need to send more and more data, it becomes
+messy. This is particularly true when coding because due to the dynamic nature of ViewBag , Visual Studio
+offers no IntelliSense to tell you what properties are available in ViewBag . This can easily lead to coding
+errors with incorrect names being used.
+
+Rather than using ViewBag , it is better practice to use a view model for the purpose of passing
+information from a controller to a view. The view is then based on this model rather than being based on
+a domain model (so far, all of our views have been based on domain models). Some developers take this
+concept further and base all their views solely on view models. In this book, we'll use a mixture of the view
+models and domain models.
+
+In this example, I'll show you how to add a count to the category filter control to show how many
+matching products are in each category. To do this, we require a view model to hold all the information we
+want to pass to the view.
+
+### Creating a View Model
+
+Create a new folder named ViewModels under the BabyStore project and add a new class to it named
+ProductIndexViewModel .
+
+```
+using BabyStore.Models;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web.Mvc;
+
+namespace BabyStore.ViewModels
+{
+    public class ProductIndexViewModel
+    {
+        public IQueryable<Product> Products { get; set; }
+        public string Search { get; set; }
+        public IEnumerable<CategoryWithCount> CatsWithCount { get; set; }
+        public string Category { get; set; }
+        public IEnumerable<SelectListItem> CatFilterItems
+        {
+            get
+            {
+                var allCats = CatsWithCount.Select(cc => new SelectListItem
+                {
+                    Value = cc.CategoryName,
+                    Text = cc.CatNameWithCount
+                });
+                return allCats;
+            }
+        }
+    }
+    public class CategoryWithCount
+    {
+        public int ProductCount { get; set; }
+        public string CategoryName { get; set; }
+        public string CatNameWithCount
+        {
+            get
+            {
+                return CategoryName + " (" + ProductCount.ToString() + ")";
+            }
+        }
+    }
+}
+```
+This class file looks more complex than the code we have used so far so I will break it down step-by-step
+to explain what each property is used for.
+
+First, the file contains two classes, called ProductIndexViewModel and CategoryWithCount .
+CategoryWithCount is a simple class used to hold a category name and the number of products within that
+category.
+
+The ProductCount property holds the number of matching products in a category and CategoryName
+simply holds the name of the category. The CatNameWithCount property then returns both of these
+properties combined into a string. An example of this property is Clothes(2) .
+
+ProductIndexViewModel needs to hold a combination of information that was previously passed to the
+view using ViewBag and also the model IEnumerable<BabyStore.Models.Product> (since this is the model
+currently specified at the top of the /Views/Products/Index.cshtml file).
+
+The first property in the class is public ```IQueryable<Product> Products { get; set; }``` . This will be
+used instead of the model currently used in the view.
+
+The second property, called ```public string Search { get; set; }``` , will replace ViewBag.Search
+currently set in the ProductsController class.
+
+The third property, called ```public IEnumerable<CategoryWithCount> CatsWithCount { get; set; }``` ,
+will hold all of the CategoryWithCount items to be used inside the select control in the view.
+The fourth property, Category , will be used as the name of the select control in the view.
+
+Finally, the property ```public IEnumerable<SelectListItem> CatFilterItems``` is used to return a list of
+the type SelectListItem , which will generate a value of the categoryName to be used as the value when the
+HTML form is submitted and the text displayed in the format of CatNameWithCount .
+
+### Updating the ProductsController Index Method to Use the View Model
+
+Update the Index method of the \Controllers\ProductsController.cs file so that it matches the following
+code. The changes — which use the view model rather than the ViewBag and return categories along with a
+count of items — are highlighted in bold. First of all, ensure that you add a using statement to the top of the
+file so that the class can access the ProductIndexViewModel class you just created.
+
+```
+        // GET: Products
+        public ActionResult Index(string category, string search)
+        {
+            //instantiate a new view model
+            var viewModel = new ProductIndexViewModel();
+
+            //select the products
+            var products = db.Products.Include(p => p.Category);
+
+            //perform the search and save the search string to the viewModel
+            if (!String.IsNullOrEmpty(search))
+            {
+                products = products.Where(p => p.Name.Contains(search) ||
+                p.Description.Contains(search) ||
+                p.Category.Name.Contains(search));
+                viewModel.Search = search;
+            }
+
+            //group search results into categories and count how many items in each category
+            viewModel.CatsWithCount = from matchingProducts in products
+                                      where
+                                      matchingProducts.CategoryID != null
+                                      group matchingProducts by
+                                      matchingProducts.Category.Name into
+                                      catGroup
+                                      select new CategoryWithCount()
+                                      {
+                                          CategoryName = catGroup.Key,
+                                          ProductCount = catGroup.Count()
+                                      };
+
+
+            if (!String.IsNullOrEmpty(category))
+            {
+                products = products.Where(p => p.Category.Name == category);
+            }
+
+            viewModel.Products = products;
+
+            return View(viewModel);            
+        }
+```
+
+The first code change ensures that a new view model is created for use within the method:
+
+```
+ProductIndexViewModel viewModel = new ProductIndexViewModel();
+```
+
+The code ```viewModel.Search = search;``` assigns the search variable to the viewModel instead of to
+ViewBag .
+
+The third code change is a LINQ statement that populates the CatsWithCount property of viewModel
+with a list of CategoryWithCount objects. In this example, I used a different form of LINQ than what I used
+previously due to the complexity of the query. I used a form of LINQ known as **query syntax** to make the
+query easier to read.
+
+The statement works by grouping products by category name, where the category ID is not null,
+using this code:
+
+```
+from matchingProducts in products
+where
+matchingProducts.CategoryID != null
+group matchingProducts by matchingProducts.Category.Name into
+catGroup
+```
+
+For each group, the category name and the number of products are then assigned to a
+CategoryWithCount object:
+
+```
+select new CategoryWithCount()
+{
+  CategoryName = catGroup.Key,
+  ProductCount = catGroup.Count()
+};
+```
+
+The final code change assigns the products variable to the Products property of the viewModel instead
+of passing it to the view and then instead passes the viewModel to the view as follows:
+
+```
+viewModel.Products = products;
+return View(viewModel);
+```
+
+Note that any products not belonging to a category will not be shown in the category filter; however,
+they can still be searched for.
+
+
+### Modifying the View to Display the New Filter Using the View Model
+
+Next update the \Views\Products\Index.cshtml file so that it uses the new view model to update the way it
+generates the filter control, retrieves the search string, displays the table headings, and displays the list
+of products. Make the following changes:
+
+The code changes made to this file are simple but significant. The first change, ```@model BabyStore.
+ViewModels.ProductIndexViewModel``` , simply tells the view to use ProductIndexViewModel as the model on
+which to base the view. Note that this is now a single class and not an enumeration.
+
+The second change, ```@Html.DropDownListFor(vm => vm.Category, Model.CatFilterItems, "All");``` ,
+generates a filter control based on the CatFilterItems property of the view model as per the second parameter.
+
+The first parameter, ```vm => vm.Category``` , specifies the HTML name of the control and hence what it will appear
+as in the query string section of the URL when the form is submitted. Since the name of the control is category ,
+our previous code that looks for the category parameter in the URL will continue to work correctly.
+
+The third change ensures that the hidden search control now references the view model instead of the
+ViewBag :
+
+```
+<input type="hidden" name="Search" id="Search" value="@Model.Search"/>
+```
+
+We then need to generate the table headings. This is not as straightforward as it appears because the
+DisplayNameFor HTML helper method does not work with collections and we want to display headings
+based on the Products property of the view model. The category heading is straightforward since this is
+a property of the view model, but to display, for example, the name of the description property of the
+product class, we cannot now use code such as ```@Html.DisplayNameFor(model => model.Products.
+Description)``` . Instead, we need to force the helper to use an actual product entity from the products
+collection by using the First() method as follows:
+
+```
+@Html.DisplayNameFor(model => model.Products.First().Description)
+```
+
+This code will now generate the table heading based on the description property of the product class.
+This code will continue to work even when there are no products in the database.
+
+■ Tip When using the DisplayNameFor HTML helper method with a collection rather than a single object,
+use the first() method to enable access to the properties you want to display the name for.
+
+The final change to the code, ```@foreach (var item in Model.Products) { ```, ensures that we now use
+the Products property of the view model to display products.
+
+Start the web site without debugging and click on View All Our Products. The Filter by Category control
+now appears with a count in it, which reflects the number of matching products in each category. 
