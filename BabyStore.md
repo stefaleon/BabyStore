@@ -978,4 +978,48 @@ The final change to the code, ```@foreach (var item in Model.Products) { ```, en
 the Products property of the view model to display products.
 
 Start the web site without debugging and click on View All Our Products. The Filter by Category control
-now appears with a count in it, which reflects the number of matching products in each category. 
+now appears with a count in it, which reflects the number of matching products in each category.
+
+
+
+## 4
+
+
+### Deleting an Entity Used as a Foreign Key
+
+So far we have updated our web site to add some useful search and filter features, and we've been able to
+add some categories and products to the site. Next we'll consider what happens if we try to delete entities.
+
+First of all, add a new category named Test Category to the web site and then add a new product
+named Test Product with any description and price and assign it to Test Category . Now try to delete Test
+Category by using the Categories/Index page and confirming the deletion. The web site will throw an error.
+
+This error occurs because the database column CategoryID is used as a foreign key in the Products
+table and currently there is no modification of this table when a category is deleted. This means that a
+product will be left with a foreign key field that contains an ID that no longer refers to a record in the
+Category table; this causes the error.
+
+To fix this issue, the code created by the scaffolding process needs to be updated so that it sets the
+foreign key of all the affected products to null . Update the HttpPost version of the Delete method in the file
+\Controllers\CategoriesController.cs with the following changes highlighted in bold:
+
+```
+    // POST: Categories/Delete/5
+    [HttpPost, ActionName("Delete")]
+    [ValidateAntiForgeryToken]
+    public ActionResult DeleteConfirmed(int id)
+    {
+        Category category = db.Categories.Find(id);
+        foreach (var p in category.Products)
+        {
+            p.CategoryID = null;
+        }
+        db.Categories.Remove(category);
+        db.SaveChanges();
+        return RedirectToAction("Index");
+    }
+```
+
+This code adds a simple foreach loop using the products navigational property of the category entity
+to set the CategoryID of each product to null . When you now try to delete Test Category , it will be deleted
+without an error and the CategoryID column of Test Product will be set to null in the database.

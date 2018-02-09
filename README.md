@@ -75,3 +75,10 @@ the *ProductsController* Index method rather than a list of text items.
 * Add the *ProductIndexViewModel* and the *CategoryWithCount* class.
 
 * Update the *ProductsController* *Index* method to use the ViewModel.
+
+
+
+&nbsp;
+## 10 Deleting an Entity Used as a Foreign Key
+
+* Update the *HttpPost* version of the *Delete* method in the file *\Controllers\CategoriesController.cs*.
