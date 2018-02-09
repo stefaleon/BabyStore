@@ -91,3 +91,10 @@ the *ProductsController* Index method rather than a list of text items.
 * Enable migrations for the *StoreContext*.
 
 * Seed the Database with Test Data.
+
+
+
+&nbsp;
+## 12 Adding Data Validation and Formatting Constraints to Model Classes
+
+* Add validation and constraints using annotations on the models.

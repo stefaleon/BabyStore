@@ -1135,3 +1135,218 @@ category's ID value based on its name: ```CategoryID=categories.Single( c => c.N
 Now we are ready to create the new database with test data from the Seed method. In Package Manager
 Console, run the command: ```update-database``` . If this works correctly, you should be informed that the
 migrations have been applied and that the Seed method has run.
+
+
+
+### Adding Data Validation and Formatting Constraints to Model Classes
+
+At the moment, the data in the site is not validated on entry or displayed in the relevant formats such as
+currency. As an example try creating a new category called 23 . You are able to do so. A user can also enter
+a completely blank category name, which causes the application to throw an error when rendering the
+category index.cshtml page.
+
+Delete the new 23 category you just created. If you did create a category with a blank name, then delete
+it from the database using SQL Server Object Explorer.
+
+In Chapter 2 , I showed you how to use a MetaDataType class to add DataAnnotations to an existing class
+rather than directly adding them to the class itself. Throughout the rest of the book, we are going to revert to
+modifying the class itself for the sake of simplicity.
+
+
+### Adding Validation and Formatting to the Category Class
+
+We’re going to add some validation and formatting to the categories as follows:
+* The name field cannot be blank
+* The name field only accepts letters
+* The name must be between three and fifty characters in length
+In order to achieve this, you must modify the Models\Category.cs file.
+
+
+```
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+
+namespace BabyStore.Models
+{
+    public partial class Category
+    {
+        public int ID { get; set; }
+
+        [Required]
+        [StringLength(50, MinimumLength = 3)]
+        [RegularExpression(@"^[A-Z]+[a-zA-Z''-'\s]*$")]
+        [Display(Name = "Category Name")]
+        public string Name { get; set; }
+
+        public virtual ICollection<Product> Products { get; set; }
+    }
+}
+```
+
+The [Required] attribute marks the property as being required, i.e., it cannot be null or empty, while
+the [StringLength(50, MinimumLength = 3)] attribute specifies that the string entered into the field must
+be between 3 and 50 characters in length.
+
+The final attribute— ```[RegularExpression(@"^[A-Z]+[a-zA-Z''-
+'\s]*$")]``` —uses a regular expression to specify that the field must only contain letters and spaces and start
+with an uppercase letter. In simple terms, this expression says the first character must be an uppercase letter
+followed by a repetition of letter and spaces. I don't cover regular expressions in this book since several
+tutorials are available online. If you want to translate a regular expression into something more meaningful
+or view a library of commonly used expressions, try using the site https://regex101.com/ .
+
+
+Next, start the web site without debugging and click on Shop by Category. Figure 4-8 shows the resulting
+page. Instead of displaying the Categories index page, the web site shows an error message informing you
+that the model backing StoreContext has changed.
+
+
+This issue is caused because the Category class now has changes in it that need to be applied to the
+database. Two of the three attributes we added need to be applied to the database to change the rules for
+the Name column. This will ensure that the column cannot be null and also apply a maxLength attribute. The
+regular expression and the minimum length are not applicable to the database.
+
+In order to fix this issue, open Package Manager Console and add a new migration by running the
+
+```
+add-migration CategoryNameValidation
+```
+ command . A new migration file will be created.
+
+ To apply these changes to the database, run the ```update-database``` command in Package Manager
+Console. The Name column of the Categories table in the database will now be updated.
+
+
+Now run the web site again and navigate to the Category Create page by clicking on Shop by Category
+on the home page. Then click Create New on the Categories index page. Try to create a blank category; the
+web site will inform you that this is not allowed.
+
+
+Now try to create a category named Clothes 2 .
+As you can see, the message  is not exactly user friendly. Fortunately, ASP.NET
+MVC allows us to override the error message text by entering an extra parameter into the attribute. To add
+some more user friendly error messages for each field, update the \Models\Category.cs file as follows:
+
+```
+[Required(ErrorMessage = "The category name cannot be blank")]
+[StringLength(50, MinimumLength = 3, ErrorMessage = "Please
+ enter a category name between 3 and 50 characters in length" )]
+[RegularExpression(@"^[A-Z]+[a-zA-Z''-'\s]*$", ErrorMessage = "Please
+enter a category name beginning with a capital letter and made up
+of letters and spaces only" )]
+```
+
+■ Note This error message should be entered on a single line in Visual Studio. They are split here simply for
+book formatting. Alternatively, if you want to split them over two lines, you must use closing and opening quote
+with a plus sign: " + " .
+
+
+Now start the web site without debugging and try creating the Clothes 2 category again. This time, the
+more meaningful error message is displayed.
+
+
+### Adding Formatting and Validation to the Product Class
+
+The product class contains properties that require more complex attributes such as formatting as currency
+and displaying a field over multiple lines. Update the Models\Product.cs file with the following code.
+
+```
+using System.ComponentModel.DataAnnotations;
+
+namespace BabyStore.Models
+{
+    public partial class Product
+    {
+        public int ID { get; set; }
+
+        [Required(ErrorMessage = "The product name cannot be blank")]
+        [StringLength(50, MinimumLength = 3, ErrorMessage = "Please enter a product name between 3 and 50 characters in length")]
+        [RegularExpression(@"^[a-zA-Z0-9'-'\s]*$", ErrorMessage = "Please enter a product name made up of letters and numbers only")]
+        public string Name { get; set; }
+
+        [Required(ErrorMessage = "The product description cannot be blank")]
+        [StringLength(200, MinimumLength = 10, ErrorMessage = "Please enter a product description between 10 and 200 characters in length")]
+        [RegularExpression(@"^[,;a-zA-Z0-9'-'\s]*$", ErrorMessage = "Please enter a product description made up of letters and numbers only")]
+        [DataType(DataType.MultilineText)]
+        public string Description { get; set; }
+
+        [Required(ErrorMessage = "The price cannot be blank")]
+        [Range(0.10, 10000, ErrorMessage = "Please enter a price between 0.10 and 10000.00")]
+        [DataType(DataType.Currency)]
+        [DisplayFormat(DataFormatString = "{0:c}")]
+        public decimal Price { get; set; }
+
+        public int? CategoryID { get; set; }
+
+        public virtual Category Category { get; set; }
+    }
+}
+```
+
+There are some new entries here that we have not seen before. The code ```[DataType(DataType.
+MultilineText)]``` tells the UI to display the input element for the description field as a text area when used
+in the edit and create views.
+
+```
+[DataType(DataType.Currency)]
+```
+is used to give a hint to the UI as to what the format should be and it
+emits HTML5 date attributes to be used by HTML 5 browsers to format input elements. At the moment, web
+browser implementation of these attributes is unfortunately patchy.
+
+```
+[DisplayFormat(DataFormatString = "{0:c}")]
+```
+ specifies that the price property should be
+displayed in currency format, i.e., £1,234.56 (with the currency set by the server locale). Generally either of
+these attributes should work and display the price formatted as currency. We have included them both here
+for completeness.
+
+Now build the solution and then, in Package Manager Consoler, run the command
+
+```
+add-migration ProductValidation
+```
+ followed by ```update-database``` to add the range and nullable settings to the database.
+
+Start the web site without debugging and click on View All Our Products. The list of
+products shows with the price field now formatted as currency due to the data annotations we made.
+
+■ Note It is possible to use the currency format when editing by using the code [DisplayFormat(Data
+FormatString = "{0:c}", ApplyFormatInEditMode = true)] , but I don't recommend that you do this,
+because the price when editing will display in the format £9,999.99. When you then try to submit the edit form,
+the price will fail validation because £ is not a number.
+
+
+Click on the Details link and you will see that the price is also now formatted as currency. To see the full
+effect of the changes to the product class, we need to try creating and editing a product.
+
+
+
+This is a big improvement on our default view and the validation applied to it; however, there are still
+some issues. The price input still displays a default error message when a number is not entered, which can
+be fixed in a couple of ways.
+
+One way to fix this is to overwrite the data-val-number HTML attribute by modifying the EditorFor
+code for the price field. You do this by passing in a new HTML attribute, as follows:
+
+```
+@Html.EditorFor(model => model.Price, new { htmlAttributes = new { @class = "form-control",
+data_val_number = "The price must be a number." } })
+```
+
+**This change must implemented in each view that allows you to edit price, making it more difficult
+to maintain**.
+
+An **alternative and more maintainable way** to remedy this is to use a regular expression in the product
+class in the same manner as before, by updating the price property as follows:
+
+```
+...
+[RegularExpression("[0-9]+(\\.[0-9][0-9]?)?",
+ErrorMessage = "The price must be a number up to two decimal places")]
+public decimal Price { get; set; }
+```
+
+This regular expression allows a number optionally followed by a decimal point, plus another one
+or two numbers. It allows numbers of the following format—1, 1.1, and 1.10—but not 1. without anything
+following the decimal point. 
