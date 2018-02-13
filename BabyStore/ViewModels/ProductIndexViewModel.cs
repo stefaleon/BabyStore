@@ -1,4 +1,5 @@
 ﻿using BabyStore.Models;
+using PagedList;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web.Mvc;
@@ -7,7 +8,7 @@ namespace BabyStore.ViewModels
 {
     public class ProductIndexViewModel
     {
-        public IQueryable<Product> Products { get; set; }
+        public IPagedList<Product> Products { get; set; }        
         public string Search { get; set; }
         public IEnumerable<CategoryWithCount> CatsWithCount { get; set; }
         public string Category { get; set; }

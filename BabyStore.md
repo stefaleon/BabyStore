@@ -1466,3 +1466,219 @@ the highlighted code to the Views\Products\Index.cshtml file after the filter by
 </p>
 //...
 ```
+
+This new select control uses the SortBy property from the view model as its name. It populates itself
+with the data from the view model’s Sorts property using the second entry in each line of the dictionary as
+the value submitted by the control (specified by "Value" ) and the first entry in each line as the text displayed
+to the user (specified by "Key" ).
+
+
+
+
+### Adding Paging
+
+In this section, I will show you a way to add paging to allow users to page through the product search
+results rather than showing them all in one large list. This code will use the popular NuGet package
+PagedList.Mvc , which is written and maintained by Troy Goode. I have chosen to use this as an
+introduction to paging because it is easy to set up and use. Later in the book, I will show you how to write
+your own asynchronous paging code and an HTML helper to display paging controls.
+
+
+### Installing PagedList.Mvc
+
+First of all, we need to install the package. Open the Project menu and then choose Manage NuGet
+Packages in order to display the NuGet Package Manager window. In this window, select the browse option
+and then search for pagedlist . Then install the latest version of PagedList.Mvc
+by clicking on the Install link. When you install PagedList.Mvc , the PagedList package is
+also installed.
+
+
+### Updating the View Model and Controller for Paging
+Once PagedList.Mvc is installed, the first thing that needs to be modified is ProductIndexViewModel , so that
+the Products property is changed to the type IPagedList . Modify the ViewModels\ProductIndexViewModel.cs file
+to update the code highlighted here:
+
+```
+using PagedList;
+//...
+
+namespace BabyStore.ViewModels
+{
+    public class ProductIndexViewModel
+    {
+        public IPagedList<Product> Products { get; set; }        
+        public string Search { get; set; }  
+        //...
+```
+
+
+We now need to modify the Index method of the ProductsController class so that it returns Products
+as a PagedList (achieved by using the ToPagedList() method). A default sort order also needs to be set in
+order to use PagedList . First of all, add the code using PagedList; to the using statements at the top of
+the file. Then modify the Controllers\ProductsController.cs file, as highlighted, in order to use the new
+PagedList package.
+
+```
+public ActionResult Index(string category, string search, string sortBy, int? page )
+{
+//...
+    if (!String.IsNullOrEmpty(category))
+    {
+        products = products.Where(p => p.Category.Name == category);
+        viewModel.Category = category;
+    }
+
+    //sort the results
+    switch (sortBy)
+    {
+        //...
+        default:
+            products = products.OrderBy(p => p.Name);
+            break;
+    }
+
+    const int PageItems = 3;
+    int currentPage = (page ?? 1);
+    viewModel.Products = products.ToPagedList(currentPage, PageItems);
+    viewModel.SortBy = sortBy;
+    viewModel.Sorts = new Dictionary<string, string>
+    {
+        {"Price low to high", "price_lowest" },
+        {"Price high to low", "price_highest" }
+    };
+
+    return View(viewModel);
+}
+```
+
+The first change adds the parameter int? page , which is a nullable integer and will represent the
+current page chosen by the user in the view. When the Products index page is first loaded, the user will not
+have selected any page, hence this parameter can be null.
+
+We also need to ensure that the current category is saved to the view model so we have added this line
+of code to ensure that you can page within a category:
+
+```
+viewModel.Category = category;
+```
+
+The code
+```
+products = products.OrderBy(p => p.Name);
+```
+is then used to set a default order of products
+because PagedList requires the list it receives to be sorted.
+
+Next, we specify the number of items to appear on each page by adding a constant using the line of code
+
+```
+const int PageItems = 3;
+```
+
+ We then declare an integer variable
+
+ ```
+ int currentPage = (page ?? 1);
+ ```
+ to hold the current page number and take the value of the page parameter, or 1, if the page variable is null.
+
+The products property of the view model is then assigned a PagedList of products specifying the
+current page and the number of items per page using the code
+
+```
+viewModel.Products = products.ToPagedList(currentPage, PageItems);
+```
+
+Finally, the sortBy value is now saved to the view model so that the sort order of the products list is
+preserved when moving from one page to another by the code:
+
+```
+viewModel.SortBy = sortBy;
+```
+
+
+
+### Updating the Products Index View for Paging
+
+Having implemented the paging code in our view model and controller, we now need to update the
+\Views\Products\Index.cshtml file to display a paging control so that the user can move between pages.
+
+We’ll also add an indication of how many items were found. To achieve this, modify the file to add a new
+using statement, add an indication of the total number of products found, and display paging links at the
+bottom of the page, as highlighted in the following code:
+
+```
+@model BabyStore.ViewModels.ProductIndexViewModel
+@using PagedList.Mvc
+
+@{
+    ViewBag.Title = "Products";
+}
+
+<h2>@ViewBag.Title</h2>
+
+<p>
+    @(String.IsNullOrWhiteSpace(Model.Search) ? "Showing all" : "Your search for " +
+        Model.Search + " found") @Model.Products.TotalItemCount products
+</p>
+
+//...
+
+
+<div>
+    Page @(Model.Products.PageCount < Model.Products.PageNumber ? 0 :
+                    Model.Products.PageNumber) of @Model.Products.PageCount
+    @Html.PagedListPager(Model.Products, page => Url.Action("Index",
+             new
+                 {
+                     category = @Model.Category,
+                     Search = @Model.Search,
+                     sortBy = @Model.SortBy,
+                     page
+                 }))
+</div>
+```
+
+
+The indication of how many products were found is displayed using the code:
+
+```
+<p>
+@(String.IsNullOrWhiteSpace(Model.Search) ? "Showing all" : "Your search for " +
+Model.Search + " found") @Model.Products.TotalItemCount products
+</p>
+```
+This code uses the `?` : (also known as ternary) operator to check if the search term is null or made
+up of whitespace. If this is true, the output of the code will be "Showing all xx products" or else if the
+user has entered a search term, the output will be "Your search for search term found xx products" .
+
+In effect, this operates as a shorthand if statement. More information on the ?: operator can be found at
+https://msdn.microsoft.com/en-gb/library/ty67wk28.aspx .
+
+Finally, the paging links are generated by this new code:
+
+```
+<div>
+  Page @(Model.Products.PageCount < Model.Products.PageNumber ? 0 :
+    Model.Products.PageNumber) of @Model.Products.PageCount
+  @Html.PagedListPager(Model.Products, page => Url.Action("Index",
+    new { category = @Model.Category,
+          Search = @Model.Search,
+          sortBy = @Model.SortBy,
+          page
+      }))
+</div>
+```
+
+This code is wrapped in a div tag for presentation purposes. The first code line uses the `?`: operator to
+decide whether or not there are any pages to display. It displays "Page 0 of 0" or "Page x of y" where x is
+the current page and y the total number of pages.
+
+The next line of code uses the HTML PagedListPager helper that comes as part of the PagedList.Mvc namespace.
+This helper takes the list of products and produces a hyperlink to each page.
+
+Url.Action is used to generate a hyperlink targeting the Index view containing the page parameter. We have added an
+anonymous type to the helper method in order to pass the current category, search, and sort order to the
+helper so that each page link contains these in its querystring. This means that the search term, chosen
+category, and sort order are all preserved when moving from one page to another. Without them, the list of
+products would be reset to show all the products.
