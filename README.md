@@ -98,3 +98,10 @@ the *ProductsController* Index method rather than a list of text items.
 ## 12 Adding Data Validation and Formatting Constraints to Model Classes
 
 * Add validation and constraints using annotations on the models.
+
+
+
+&nbsp;
+## 13 Sorting Products by Price
+
+* Add sorting by product price.

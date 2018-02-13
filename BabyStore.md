@@ -1341,7 +1341,7 @@ An **alternative and more maintainable way** to remedy this is to use a regular 
 class in the same manner as before, by updating the price property as follows:
 
 ```
-...
+//...
 [RegularExpression("[0-9]+(\\.[0-9][0-9]?)?",
 ErrorMessage = "The price must be a number up to two decimal places")]
 public decimal Price { get; set; }
@@ -1349,4 +1349,120 @@ public decimal Price { get; set; }
 
 This regular expression allows a number optionally followed by a decimal point, plus another one
 or two numbers. It allows numbers of the following format—1, 1.1, and 1.10—but not 1. without anything
-following the decimal point. 
+following the decimal point.
+
+
+
+## 5
+
+## Sorting, Paging, and Routing
+
+
+### Sorting Products by Price
+
+To demonstrate sorting, I’ll show you a simple example to sort products by price, allowing users to order
+products by price.
+First of all, add a new switch statement to the Index method of the Controllers\ProductsController.cs
+file, as highlighted in the following code, so that the products are reordered by price:
+
+```
+// GET: Products
+public ActionResult Index(string category, string search , string sortBy )
+{
+  //...
+  //sort the results
+  switch (sortBy)
+  {
+      case "price_lowest":
+          products = products.OrderBy(p => p.Price);
+          break;
+      case "price_highest":
+          products = products.OrderByDescending(p => p.Price);
+          break;
+      default:
+          break;
+  }
+
+  viewModel.Products = products;
+
+  return View(viewModel);            
+}
+```
+
+This new code uses the Entity Framework OrderBy and OrderByDescending methods to sort
+products by ascending and descending price. Run the application without debugging and manually
+change the URL to test that sorting works as expected, by using the Products?sortBy=price_lowest and
+Products?sortBy=price_highest URLs. The products should reorder with the lowest priced item at the
+top and the highest priced item at the top, respectively.
+
+
+### Adding Sorting to the Products Index View
+
+We now need to add some user interface controls for sorting into the web site to allow users to choose
+how they want to sort. To demonstrate this, add a select list and populate it with values and text from a
+dictionary type.
+
+First of all, add the following highlighted SortBy and Sorts properties to the ProductIndexViewModel
+class in the \ViewModels\ProductIndexViewModel.cs file:
+
+
+```
+public class ProductIndexViewModel
+{
+    //...
+    public string SortBy { get; set; }
+    public Dictionary<string, string> Sorts { get; set; }
+
+    //...
+}
+```
+
+
+The SortBy property will be used as the name of the select element in the view and the Sorts property
+will be used to hold the data to populate the select element.
+
+Now we need to populate the Sorts property from the ProductController class. Modify the
+\Controllers\ProductsController.cs file to add the following line of code to the end of the Index method
+prior to returning the View:
+
+```
+// GET: Products
+public ActionResult Index(string category, string search, string sortBy)
+{
+    //...
+    viewModel.Products = products;
+
+    viewModel.Sorts = new Dictionary<string, string>
+    {
+        {"Price low to high", "price_lowest" },
+        {"Price high to low", "price_highest" }
+    };
+
+    return View(viewModel);     
+}
+```
+
+
+
+Finally, we need to add the control to the view so that users can make a selection. To achieve this, add
+the highlighted code to the Views\Products\Index.cshtml file after the filter by category code as follows:
+
+```
+@model BabyStore.ViewModels.ProductIndexViewModel
+
+//...
+<p>
+    @Html.ActionLink("Create New", "Create")
+    @using (Html.BeginForm("Index", "Products", FormMethod.Get))
+    {
+        <label>Filter by category:</label>
+        @Html.DropDownListFor(vm => vm.Category, Model.CatFilterItems, "All");
+          <label>Sort by:</label>
+          @Html.DropDownListFor(vm => vm.SortBy, new SelectList(Model.Sorts, "Value", "Key"),
+          "Default")
+        <input type="submit" value="Filter" />
+        <input type="hidden" name="Search" id="Search" value="@Model.Search" />
+    }
+</p>
+//...
+```
