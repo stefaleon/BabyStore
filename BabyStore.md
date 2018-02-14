@@ -1682,3 +1682,302 @@ anonymous type to the helper method in order to pass the current category, searc
 helper so that each page link contains these in its querystring. This means that the search term, chosen
 category, and sort order are all preserved when moving from one page to another. Without them, the list of
 products would be reset to show all the products.
+
+
+
+
+### Routing
+
+So far we have been using parameters in the querystring portion of the URL to pass data for categories and
+paging to the Index action method in the ProductController class. These URLs follow the standard format
+such as /Products?category=Sleeping&page=2 , and although functional, these URLs can be improved
+upon by using the ASP.NET Routing feature. It generates URLs in a more “friendly” format that is more
+meaningful to users and search engines. ASP.NET routing is not specific to MVC and can also be used with
+Web Forms and Web API; however, the methods used are slightly different when working with Web Forms.
+
+
+To keep things manageable, we’re going to generate routes only for categories and paging. There won’t
+be a route for searching or sorting due to the fact that routing requires a route for each expected combination
+that can appear and each parameter needs some way of identifying itself. For example, we use the word “page”
+to prefix each page number in the routes that use it. It is possible to make routing overly complex by trying to
+add a route for everything. It’s also worth noting that any values submitted by the HTML form for filtering by
+category will still generate URLs in the “old” format because that is how HTML forms work by design.
+
+
+One of the most important things about routing is that routes have to be added in the order of most
+specific first, with more general routes further down the list. The routing system searches down the routes
+until it finds anything that matches the current URL and then it stops. If there is a general route that matches
+a URL and a more specific route that also matches, but it is defined below the more general route then the
+more specific route will never be used.
+
+
+### Adding Routes
+
+We are going to take the same approach to adding routes as used by the scaffolding process when the project
+was created and add them to the \App_Start\RouteConfig.cs file in this format:
+
+```
+routes.MapRoute(
+  name: "Name",
+  url: "Rule",
+  defaults: DefaultValues
+);
+```
+
+The name parameter represents the name of the route and can be left blank; however, we’ll be using
+them in this book to differentiate between routes.
+The url parameter contains a rule for matching the route to a URL format. This can contain several
+formats and arguments, as follows:
+* The url parameter is divided into segments, with each segment matching sections of
+the URL.
+* A URL has to have the same number of segments as the url parameter in order to
+match it, unless either defaults or a wildcard is specified (see the following bullet
+points for an explanation of each of these).
+* Each segment can be:
+  * A static element URL, such as “Products”. This will simply match the URL
+/Products and will call the relevant controller and action method.
+  * A variable element that is able to match anything. For example,
+"Products/{category}" will match anything after Products in a URL and
+assign it to {category} and {category} can then be used in the action method
+targeted by the route.
+  * A combination of static and variable elements that will match anything in the
+same URL segment matching the format specified. For example, "Products/
+Page{page}" will match URLs such as Products/Page2 or Products/Page99 and
+assign the value of the part of the URL following Page to {page} .
+  * A catch-all wildcard element, for example "Products/{`*`everything} , will
+map everything following the Products section of the URL into the everything
+variable segment. This is done regardless of whether it contains slashes or not.
+We won’t use wildcard matches in this project.
+  * Each segment can also be specified as being optional or having a default value if the
+corresponding element of the URL is blank. A good example of this is the default
+route specified when the project was created. This route uses the following code to
+specify default values for the controller and action method to be used. It also defines
+the id element as being optional:
+
+```
+routes.MapRoute(
+    name: "Default",
+    url: "{controller}/{action}/{id}",
+    defaults: new { controller = "Home", action = "Index",
+                          id = UrlParameter.Optional }
+);
+```
+
+
+
+
+To start with routes, add a route for allowing URLs in the format /Products/Category (such as /
+Products/Sleeping to display just the products in the Sleeping category). Add the following highlighted
+code to the RegisterRoutes method in the \App_Start\RouteConfig.cs file, above the Default route:
+
+```
+namespace BabyStore
+{
+    public class RouteConfig
+    {
+        public static void RegisterRoutes(RouteCollection routes)
+        {
+            routes.IgnoreRoute("{resource}.axd/{*pathInfo}");
+
+            routes.MapRoute(
+                name: "ProductsbyCategory",
+                url: "Products/{category}",
+                defaults: new { controller = "Products", action = "Index" }
+            );
+
+            //...
+        }
+    }
+}
+```
+
+Start the web site without debugging and click on Shop by Category, then click on Sleeping. The link will
+now open the /Products/Sleeping URL, due to the new ProductsbyCategory route.
+
+So far so good; everything looks like it’s working okay and you can now use the URLs in the format
+Products/Category . However, there is a problem. Try clicking on the Create New link. The product create
+page no longer appears and instead a blank list of categories is displayed. The reason for this is that the new
+route treats everything following Products in the URL as a category. There is no category named Create, so
+no products are returned.
+
+Now click the back button to go back to the products list with some products displayed. Try clicking on
+the Edit, Details, and Delete links. They still work! You may be wondering why this is; well, the answer lies
+in the fact that the working links all have an ID parameter on the end of them. For example, the edit links
+take the format /Products/Edit/6 and this format matches the original Default route ( "{controller}/
+{action}/{id}" ) rather than the new ProductsbyCategory route ( "Products/{category}" ).
+
+To fix this issue, we need to add a more specific route for the Products/Create URL. Add a new route to
+the RegisterRoutes method in the App_Start\RouteConfig.cs file above the ProductsbyCategory route.
+
+
+```
+namespace BabyStore
+{
+    public class RouteConfig
+    {
+        public static void RegisterRoutes(RouteCollection routes)
+        {
+            routes.IgnoreRoute("{resource}.axd/{*pathInfo}");
+
+            routes.MapRoute(
+                name: "ProductsCreate",
+                url: "Products/Create",
+                defaults: new { controller = "Products", action = "Create" }
+            );
+
+            routes.MapRoute(
+                name: "ProductsbyCategory",
+                url: "Products/{category}",
+                defaults: new { controller = "Products", action = "Index" }
+            );
+
+            //...
+        }
+    }
+}
+```
+
+Start the web site without debugging and click on the Create Product link. It now works again
+because of the ProductsCreate route. It’s very important to add the ProductsCreate route above the
+ProductsByCategory route; otherwise, it will never be used. If it was below the ProductsByCategory route,
+the routing system would find a match for the "Products/{category}" URL first and then stop searching for
+a matching route.
+
+
+
+Next we’re going to add a route for paging so that the web site can use URLs in the format /Products/Page2 .
+Update the RegisterRoutes method of the App_Start\RouteConfig.cs file to add a new route to the file
+above the ProductsbyCategory route, as follows:
+
+```
+namespace BabyStore
+{
+    public class RouteConfig
+    {
+        public static void RegisterRoutes(RouteCollection routes)
+        {
+            routes.IgnoreRoute("{resource}.axd/{*pathInfo}");
+
+            routes.MapRoute(
+                name: "ProductsCreate",
+                url: "Products/Create",
+                defaults: new { controller = "Products", action = "Create" }
+            );
+
+            routes.MapRoute(
+                name: "ProductsbyPage",
+                url: "Products/Page{page}",
+                defaults: new
+                { controller = "Products", action = "Index" }
+            );
+
+            routes.MapRoute(
+                name: "ProductsbyCategory",
+                url: "Products/{category}",
+                defaults: new { controller = "Products", action = "Index" }
+            );
+
+            //...
+        }
+    }
+}
+```
+
+This new ProductsByPage route will match any URLs with the format Products/PageX , where X is the
+page number. Again this route must appear before the ProductsbyCategory route; otherwise, it will never
+get used. Try the new ProductsbyPage route by starting the web site without debugging and clicking View All
+Our Products. Then click on a page number in the paging control at the bottom of the page. The URL should
+now appear in the format Products/PageX . For example, clicking on number 4
+in the paging control, generates the URL Products/Page4 .
+
+
+
+
+So far we have added routes for Products/Category and Product/PageX , but we have nothing
+for Product/Category/PageX . To add a new route that allows this, add the following code above the
+ProductsByPage route in the RegisterRoutes method of the App_Start\RouteConfig.cs file:
+
+```
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.Mvc;
+using System.Web.Routing;
+
+namespace BabyStore
+{
+    public class RouteConfig
+    {
+        public static void RegisterRoutes(RouteCollection routes)
+        {
+            routes.IgnoreRoute("{resource}.axd/{*pathInfo}");
+
+            routes.MapRoute(
+                name: "ProductsCreate",
+                url: "Products/Create",
+                defaults: new { controller = "Products", action = "Create" }
+            );
+
+            routes.MapRoute(
+                name: "ProductsbyCategorybyPage",
+                url: "Products/{category}/Page{page}",
+                defaults: new { controller = "Products", action = "Index" }
+            );
+
+            routes.MapRoute(
+                name: "ProductsbyPage",
+                url: "Products/Page{page}",
+                defaults: new
+                { controller = "Products", action = "Index" }
+            );
+
+            //...
+        }
+    }
+}
+```
+
+Start the web site without debugging and click on Shop by Category and then click on Sleeping. Then
+click on page 2 in the paging control. The URL now generated is Products/Sleeping/Page2 because of the
+new ProductsbyCategorybyPage route.
+
+
+
+We now appear to have added all the new routes, but there are still some issues with how the
+new routes affect the site. To see the first remaining issue, start with the web site filtered as shown in
+Figure 5-8 . Then try to choose another category from the drop-down and clicking the filter button. The
+results are not filtered and remain on the Sleeping category. This is because the HTML form no longer
+targets the ProductsController index method correctly. To resolve this issue, we need to add one final route
+to the /App_Start/RouteConfig.cs file and then configure the HTML form to use it.
+First of all, add a new route above the default route in the RegisterRoutes method of the
+App_Start\RoutesConfig.cs file:
+
+```
+namespace BabyStore
+{
+    public class RouteConfig
+    {
+        public static void RegisterRoutes(RouteCollection routes)
+        {
+            //...
+
+            routes.MapRoute(
+                name: "ProductsIndex",
+                url: "Products",
+                defaults: new { controller = "Products", action = "Index" }
+            );
+
+            routes.MapRoute(
+                name: "Default",
+                url: "{controller}/{action}/{id}",
+                defaults: new { controller = "Home", action = "Index", id = UrlParameter.Optional }
+            );
+        }
+    }
+}
+```
+
+This new route is named ProductsIndex and it creates a route that targets the Index action method of
+the ProductsController class. We’ve created this to give the web site a way to target this method when using
+URL links and forms.

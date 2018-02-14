@@ -112,3 +112,9 @@ the *ProductsController* Index method rather than a list of text items.
 ## 14 Paging
 
 * Add pagination with the *PagedList* package.
+
+
+&nbsp;
+## 15 Routing
+
+* Generate routes for categories and paging.
