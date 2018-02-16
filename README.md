@@ -118,3 +118,10 @@ the *ProductsController* Index method rather than a list of text items.
 ## 15 Routing
 
 * Generate routes for categories and paging.
+
+
+
+&nbsp;
+## 16 Creating Entities to Store Image Filenames
+
+* Add the *ProductImage* class and create the *ProductImages* table by adding a DbSet and running a migration.
