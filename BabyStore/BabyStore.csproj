@@ -220,6 +220,10 @@
     <Compile Include="Migrations\201802091413153_ProductValidation.Designer.cs">
       <DependentUpon>201802091413153_ProductValidation.cs</DependentUpon>
     </Compile>
+    <Compile Include="Migrations\201802160727555_ProductImages.cs" />
+    <Compile Include="Migrations\201802160727555_ProductImages.Designer.cs">
+      <DependentUpon>201802160727555_ProductImages.cs</DependentUpon>
+    </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Models\AccountViewModels.cs" />
     <Compile Include="Models\Category.cs" />
@@ -227,6 +231,7 @@
     <Compile Include="Models\IdentityModels.cs" />
     <Compile Include="Models\ManageViewModels.cs" />
     <Compile Include="Models\Product.cs" />
+    <Compile Include="Models\ProductImage.cs" />
     <Compile Include="Models\ProductMetaData.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Startup.cs" />
@@ -331,6 +336,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Migrations\201802091413153_ProductValidation.resx">
       <DependentUpon>201802091413153_ProductValidation.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201802160727555_ProductImages.resx">
+      <DependentUpon>201802160727555_ProductImages.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <PropertyGroup>

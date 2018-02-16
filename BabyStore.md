@@ -1981,3 +1981,67 @@ namespace BabyStore
 This new route is named ProductsIndex and it creates a route that targets the Index action method of
 the ProductsController class. We’ve created this to give the web site a way to target this method when using
 URL links and forms.
+
+
+
+## 6
+
+## Managing Product Images:Many-to-Many Relationships
+
+This chapter covers how to create a new entity to manage images, how to upload image files using HTML
+forms and associate them with products using a many-to-many relationship, and how to save images to the
+filesystem. This chapter also introduces more complex error handling to add custom errors to the model in
+order to display them back to the user.
+
+### Creating Entities to Store Image Filenames
+
+For this project, we’re going to store the image files within the web project using the filesystem. The database
+will contain data relating the filesystem’s name of the image with one or more products. To begin modeling
+image storage, add a new class named ProductImage to the Models folder as follows:
+
+```
+using System.ComponentModel.DataAnnotations;
+
+namespace BabyStore.Models
+{
+    public class ProductImage
+    {
+        public int ID { get; set; }
+
+        [Display(Name = "File")]
+        public string FileName { get; set; }
+    }
+}
+```
+
+You are probably wondering why we added an extra class that basically maps a string to a product
+rather than simply adding a collection of strings to the Product class. This is a common question raised by
+developers when using Entity Framework. The reason is that Entity Framework cannot model a collection of
+strings in the database; it requires the collection to be modeled as we have done with the strings stored in a
+distinct class.
+
+
+Now update the DAL\StoreContext.cs file to add a new property for ProductImages as follows:
+
+```
+using BabyStore.Models;
+using System.Data.Entity;
+
+namespace BabyStore.DAL
+{
+    public class StoreContext: DbContext
+    {
+        public DbSet<Product> Products { get; set; }
+        public DbSet<Category> Categories { get; set; }
+
+        public DbSet<ProductImage> ProductImages { get; set; }
+    }
+}
+```
+
+Next, create a migration to add the new ProductImage entity as a table by entering
+```
+add-migration ProductImages
+```
+into Package Manager Console and pressing Return. Then run the `update-database`
+command to update the database and create the new ProductImages table.
